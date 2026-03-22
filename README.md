@@ -4,6 +4,9 @@
 
 <img width="1825" height="978" alt="image" src="https://github.com/user-attachments/assets/7bebce9d-2644-4b57-a114-e00d4a1c804c" />
 
+<img width="1805" height="1015" alt="image" src="https://github.com/user-attachments/assets/89c47d8a-dffa-4b3b-b63c-e3f1bde2f856" />
+
+
 
 ### Real-time rider safety detection powered by **YOLOv8** and deployed via **Streamlit**
 
