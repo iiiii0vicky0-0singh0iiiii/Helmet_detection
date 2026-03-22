@@ -3,61 +3,76 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 from PIL import Image
-import tempfile
 
-# Load model
-model = YOLO("best.pt")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="Helmet Detection Dashboard", layout="wide")
 
 st.title("🪖 Helmet Detection Dashboard")
 
+# ---------------- LOAD MODEL (CACHED) ----------------
+@st.cache_resource
+def load_model():
+    return YOLO("best.pt")
+
+model = load_model()
+
+# ---------------- SIDEBAR ----------------
 option = st.sidebar.selectbox(
     "Choose Mode",
-    ("Image Upload", "Video Upload", "Live Camera")
+    ("Image Upload", "Live Camera")
 )
 
-# ---------------- IMAGE ----------------
+# ---------------- IMAGE UPLOAD ----------------
 if option == "Image Upload":
+
     uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
     if uploaded_file:
         image = Image.open(uploaded_file)
         img_np = np.array(image)
 
+        # Run detection
         results = model(img_np)
         annotated = results[0].plot()
 
-        st.image(annotated, caption="Detection Result")
+        # Count detections
+        helmet = 0
+        no_helmet = 0
 
-# ---------------- VIDEO ----------------
-elif option == "Video Upload":
-    uploaded_file = st.file_uploader("Upload Video", type=["mp4", "avi"])
+        for box in results[0].boxes:
+            cls = int(box.cls[0])
+            if cls == 0:
+                helmet += 1
+            else:
+                no_helmet += 1
 
-    if uploaded_file:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(uploaded_file.read())
+        # Layout
+        col1, col2 = st.columns(2)
 
-        cap = cv2.VideoCapture(tfile.name)
+        with col1:
+            st.image(img_np, caption="Original Image")
 
-        stframe = st.empty()
+        with col2:
+            st.image(annotated, caption="Detected Image")
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+        # Show counts
+        st.success(f"🟢 Helmet: {helmet}")
+        st.error(f"🔴 No Helmet: {no_helmet}")
 
-            results = model(frame)
-            annotated = results[0].plot()
-
-            stframe.image(annotated, channels="BGR")
-
-        cap.release()
+        # Download button
+        st.download_button(
+            "📥 Download Result",
+            data=cv2.imencode('.jpg', annotated)[1].tobytes(),
+            file_name="result.jpg"
+        )
 
 # ---------------- LIVE CAMERA ----------------
 elif option == "Live Camera":
+
     run = st.checkbox("Start Camera")
+    stframe = st.empty()
 
     cap = cv2.VideoCapture(0)
-    stframe = st.empty()
 
     while run:
         ret, frame = cap.read()
