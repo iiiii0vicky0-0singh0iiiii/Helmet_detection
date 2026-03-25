@@ -67,7 +67,7 @@ def draw_boxes(results, frame):
 # -----------------------------
 # 📸 IMAGE DETECTION
 # -----------------------------
-st.header("📸 Image Detection")
+st.header("📸 Image Helmet Detection")
 
 uploaded_img = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
@@ -86,7 +86,7 @@ if uploaded_img:
 # -----------------------------
 st.header("🎥 Live Camera Detection")
 
-capture_flag = st.button("📸 Capture Image")
+capture_flag = st.button("")
 
 class VideoProcessor(VideoProcessorBase):
     def recv(self, frame):
