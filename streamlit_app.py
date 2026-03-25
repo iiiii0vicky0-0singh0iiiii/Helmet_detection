@@ -9,7 +9,6 @@ import torch
 from ultralytics import YOLO
 
 # allow YOLO model class
-torch.serialization.add_safe_globals([torch.nn.Module])
 
 model = YOLO("best.pt")
 
