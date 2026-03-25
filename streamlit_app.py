@@ -1,76 +1,44 @@
 import streamlit as st
 from ultralytics import YOLO
-import cv2
-import numpy as np
 from PIL import Image
-import tempfile
+import numpy as np
 
-import torch
-from ultralytics import YOLO
+# -----------------------------
+# Load Model (only once)
+# -----------------------------
+@st.cache_resource
+def load_model():
+    return YOLO("best.pt")   # your trained model
 
-# allow YOLO model class
+model = load_model()
 
-model = YOLO("best.pt")
+# -----------------------------
+# UI
+# -----------------------------
+st.title("🪖 Helmet Detection App")
 
-st.title("🪖 Helmet Detection Dashboard")
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
 
-option = st.sidebar.selectbox(
-    "Choose Mode",
-    ("Image Upload", "Video Upload", "Live Camera")
-)
+# -----------------------------
+# Prediction
+# -----------------------------
+if uploaded_file is not None:
+    
+    # Load image safely
+    img = Image.open(uploaded_file).convert("RGB")
 
-# ---------------- IMAGE ----------------
-if option == "Image Upload":
-    uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
+    st.image(img, caption="Uploaded Image", use_column_width=True)
 
-    if uploaded_file:
-        image = Image.open(uploaded_file)
-        img_np = np.array(image)
+    # Convert to numpy (FIX)
+    img_np = np.array(img)
 
-        results = model(img_np)
-        annotated = results[0].plot()
+    # DEBUG (optional)
+    st.write("Image Shape:", img_np.shape)
 
-        st.image(annotated, caption="Detection Result")
+    # Run model (FIXED)
+    results = model(img_np)
 
-# ---------------- VIDEO ----------------
-elif option == "Video Upload":
-    uploaded_file = st.file_uploader("Upload Video", type=["mp4", "avi"])
+    # Plot result
+    result_img = results[0].plot()
 
-    if uploaded_file:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(uploaded_file.read())
-
-        cap = cv2.VideoCapture(tfile.name)
-
-        stframe = st.empty()
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            results = model(frame)
-            annotated = results[0].plot()
-
-            stframe.image(annotated, channels="BGR")
-
-        cap.release()
-
-# ---------------- LIVE CAMERA ----------------
-elif option == "Live Camera":
-    run = st.checkbox("Start Camera")
-
-    cap = cv2.VideoCapture(0)
-    stframe = st.empty()
-
-    while run:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        results = model(frame)
-        annotated = results[0].plot()
-
-        stframe.image(annotated, channels="BGR")
-
-    cap.release()
+    st.image(result_img, caption="Detection Result", use_column_width=True)
