@@ -5,7 +5,12 @@ import numpy as np
 from PIL import Image
 import tempfile
 
-# Load model
+import torch
+from ultralytics import YOLO
+
+# allow YOLO model class
+torch.serialization.add_safe_globals([torch.nn.Module])
+
 model = YOLO("best.pt")
 
 st.title("🪖 Helmet Detection Dashboard")
