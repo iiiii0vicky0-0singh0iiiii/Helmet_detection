@@ -2,54 +2,43 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
 import numpy as np
-import cv2
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 
 # -----------------------------
-# Load Model
+# Load Model (only once)
 # -----------------------------
 @st.cache_resource
 def load_model():
-    return YOLO("best.pt")
+    return YOLO("best.pt")   # your trained model
 
 model = load_model()
 
+# -----------------------------
+# UI
+# -----------------------------
 st.title("🪖 Helmet Detection App")
 
-# -----------------------------
-# IMAGE UPLOAD
-# -----------------------------
-st.header("📸 Image Detection")
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
-
-if uploaded_file:
+# -----------------------------
+# Prediction
+# -----------------------------
+if uploaded_file is not None:
+    
+    # Load image safely
     img = Image.open(uploaded_file).convert("RGB")
+
+    st.image(img, caption="Uploaded Image", use_column_width=True)
+
+    # Convert to numpy (FIX)
     img_np = np.array(img)
 
+    # DEBUG (optional)
+    st.write("Image Shape:", img_np.shape)
+
+    # Run model (FIXED)
     results = model(img_np)
+
+    # Plot result
     result_img = results[0].plot()
 
-    st.image(result_img, caption="Detected Image")
-
-# -----------------------------
-# LIVE VIDEO DETECTION
-# -----------------------------
-st.header("🎥 Live Camera Detection")
-
-class VideoProcessor(VideoProcessorBase):
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-
-        # Run detection
-        results = model(img)
-
-        # Draw boxes
-        annotated = results[0].plot()
-
-        return annotated
-
-webrtc_streamer(
-    key="helmet-detection",
-    video_processor_factory=VideoProcessor
-)
+    st.image(result_img, caption="Detection Result", use_column_width=True)
