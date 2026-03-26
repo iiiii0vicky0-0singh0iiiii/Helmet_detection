@@ -1,55 +1,54 @@
 import streamlit as st
 from ultralytics import YOLO
-from PIL import Image
 import numpy as np
-import cv2
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
+from PIL import Image
 
-# -----------------------------
-# Load Model
-# -----------------------------
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="Helmet Detection Dashboard", layout="wide")
+
+st.title("🪖 Helmet Detection Dashboard")
+
+# ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model():
     return YOLO("best.pt")
 
 model = load_model()
 
-st.title("🪖 Helmet Detection App")
+# ---------------- SIDEBAR ----------------
+option = st.sidebar.selectbox(
+    "Choose Mode",
+    ("Image Upload",)
+)
 
-# -----------------------------
-# IMAGE UPLOAD
-# -----------------------------
-st.header("📸 Image Detection")
-
+# ---------------- IMAGE UPLOAD ONLY ----------------
 uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file:
-    img = Image.open(uploaded_file).convert("RGB")
-    img_np = np.array(img)
+    image = Image.open(uploaded_file)
+    img_np = np.array(image)
 
     results = model(img_np)
-    result_img = results[0].plot()
+    annotated = results[0].plot()
 
-    st.image(result_img, caption="Detected Image")
+    # Count detections
+    helmet = 0
+    no_helmet = 0
 
-# -----------------------------
-# LIVE VIDEO DETECTION
-# -----------------------------
-st.header("🎥 Live Camera Detection")
+    for box in results[0].boxes:
+        cls = int(box.cls[0])
+        if cls == 0:
+            helmet += 1
+        else:
+            no_helmet += 1
 
-class VideoProcessor(VideoProcessorBase):
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
+    col1, col2 = st.columns(2)
 
-        # Run detection
-        results = model(img)
+    with col1:
+        st.image(img_np, caption="Original")
 
-        # Draw boxes
-        annotated = results[0].plot()
+    with col2:
+        st.image(annotated, caption="Detected")
 
-        return annotated
-
-webrtc_streamer(
-    key="helmet-detection",
-    video_processor_factory=VideoProcessor
-)
+    st.success(f"🟢 Helmet: {helmet}")
+    st.error(f"🔴 No Helmet: {no_helmet}")
