@@ -18,7 +18,7 @@
 
 <br>
 
-**[🚀 Live Demo](https://helmetdetection-up.streamlit.app/)** · **[Report Bug](https://github.com/yourusername/helmet-detection-system/issues)** · **[Request Feature](https://github.com/yourusername/helmet-detection-system/issues)**
+**[🚀 Live Demo](https://huggingface.co/spaces/vicky00777/helmet-detection-yolo)** · **[Report Bug](https://github.com/iiiii0vicky0-0singh0iiiii/Helmet_detection/issues)** · **[Request Feature](https://github.com/iiiii0vicky0-0singh0iiiii/Helmet_detection/issues)**
 
 <br>
 
