@@ -21,7 +21,9 @@ from ultralytics import YOLO
 
 
 APP_DIR = Path(__file__).resolve().parent
-MODEL_CANDIDATES = ("best.pt", "yolov11nbest.pt")
+# Prefer the YOLO11 checkpoint shipped with this app. Some GitHub copies also
+# contain an older best.pt checkpoint with a different class configuration.
+MODEL_CANDIDATES = ("yolov11nbest.pt", "best.pt")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 st.set_page_config(
@@ -65,6 +67,17 @@ def open_rgb_image(image_bytes: bytes) -> Image.Image:
         return image.convert("RGB")
 
 
+def helmet_status(class_name: str) -> str:
+    """Map the model's detailed labels to the two dashboard safety groups."""
+    normalized = class_name.lower().replace("_", " ").replace("-", " ").strip()
+    without_helmet_terms = ("no helmet", "without helmet", "non helmet", "nohelmet")
+    if any(term in normalized for term in without_helmet_terms):
+        return "Without helmet"
+    if "helmet" in normalized:
+        return "With helmet"
+    return "Other"
+
+
 def run_detection(
     model: YOLO,
     image: Image.Image,
@@ -92,12 +105,14 @@ def run_detection(
         for box in result.boxes:
             class_id = int(box.cls.item())
             class_name = str(result.names[class_id])
+            status = helmet_status(class_name)
             score = float(box.conf.item())
             x1, y1, x2, y2 = (float(value) for value in box.xyxy[0].tolist())
-            counts[class_name] = counts.get(class_name, 0) + 1
+            counts[status] = counts.get(status, 0) + 1
             rows.append(
                 {
                     "Class": class_name,
+                    "Status": status,
                     "Confidence": round(score, 3),
                     "X1": round(x1, 1),
                     "Y1": round(y1, 1),
@@ -106,7 +121,7 @@ def run_detection(
                 }
             )
 
-    columns = ["Class", "Confidence", "X1", "Y1", "X2", "Y2"]
+    columns = ["Class", "Status", "Confidence", "X1", "Y1", "X2", "Y2"]
     return annotated, pd.DataFrame(rows, columns=columns), counts
 
 
@@ -169,7 +184,7 @@ with st.sidebar:
         "Confidence threshold",
         min_value=0.10,
         max_value=0.90,
-        value=0.35,
+        value=0.25,
         step=0.05,
         help="Higher values show fewer, more certain detections.",
     )
@@ -283,8 +298,14 @@ if result_data and result_data.get("input_signature") == input_signature:
 
     metric_columns = st.columns(3)
     metric_columns[0].metric("Total detections", len(detections))
-    metric_columns[1].metric("With helmet", counts.get("accept-Helmet-", 0))
-    metric_columns[2].metric("Without helmet", counts.get("non-Helmet-", 0))
+    metric_columns[1].metric("With helmet", counts.get("With helmet", 0))
+    metric_columns[2].metric("Without helmet", counts.get("Without helmet", 0))
+
+    without_helmet_count = counts.get("Without helmet", 0)
+    if without_helmet_count:
+        st.error(f"Safety alert: {without_helmet_count} person(s) detected without a helmet.")
+    elif not detections.empty:
+        st.success("No person without a helmet was detected in this image.")
 
     st.image(result_data["annotated_png"], use_container_width=True)
 
