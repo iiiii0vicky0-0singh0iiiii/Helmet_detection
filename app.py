@@ -164,7 +164,7 @@ st.markdown(
     """
     <section class="hero">
         <div class="eyebrow">WORKPLACE SAFETY · COMPUTER VISION</div>
-        <h1>HelmetGuard AI</h1>
+        <h1>Helmet Detection</h1>
         <p>Upload a workplace image and instantly identify people with and without safety helmets.</p>
     </section>
     """,
